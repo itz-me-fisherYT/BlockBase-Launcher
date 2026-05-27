@@ -290,9 +290,11 @@
     const clientId = localStorage.getItem(msClientIdKey) || "00000000402B5328";
 
     try {
-      const account = window.launcherApi.microsoftReauth
-        ? await window.launcherApi.microsoftReauth(accountId, clientId)
-        : await window.launcherApi.microsoftLogin(clientId);
+      if (!window.launcherApi.microsoftReauth) {
+        window.alert("This build does not include silent Microsoft reauth yet.");
+        return;
+      }
+      const account = await window.launcherApi.microsoftReauth(accountId, clientId);
       const updatedJava = {
         ...existing,
         ...account,
@@ -308,12 +310,10 @@
       );
       writeState(state);
       closeMicrosoftDeviceModal();
-      window.alert(account.refreshed
-        ? `Reauthed ${account.displayName} without browser login.`
-        : `Reauthed ${account.displayName}.`);
+      window.alert(`Reauthed ${account.displayName} without browser login.`);
       reloadKeepingPage();
     } catch (error) {
-      window.alert(`Reauth failed: ${error?.message || String(error)}`);
+      window.alert(`Silent reauth could not be completed: ${error?.message || String(error)}`);
     }
   }
 

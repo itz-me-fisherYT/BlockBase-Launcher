@@ -1741,6 +1741,18 @@ async function microsoftReauth(accountId, clientId) {
   const cached = findMicrosoftAuth(cache, String(accountId || ""));
   const cleanClientId = String(cached?.clientId || clientId || "").trim();
 
+  if (!cached) {
+    throw new Error("No saved Microsoft session was found for this account. Use Add Microsoft Java to sign in again.");
+  }
+
+  if (!cached.refreshToken) {
+    throw new Error("This account does not have a saved refresh token yet, so it cannot reauth silently. Use Add Microsoft Java once to create a fresh saved session.");
+  }
+
+  if (!cleanClientId) {
+    throw new Error("This saved Microsoft session is missing its client ID. Use Add Microsoft Java once to repair it.");
+  }
+
   if (cached?.refreshToken && cleanClientId) {
     try {
       const refreshed = await refreshMicrosoftToken(cleanClientId, cached.refreshToken);
@@ -1748,11 +1760,10 @@ async function microsoftReauth(accountId, clientId) {
       emitLog("info", `Refreshed Microsoft auth for ${account.displayName} without opening the browser.`);
       return { ...account, refreshed: true };
     } catch (error) {
-      emitLog("warn", `Saved Microsoft session could not be refreshed: ${error?.message || String(error)}. Opening browser login.`);
+      emitLog("warn", `Saved Microsoft session could not be refreshed: ${error?.message || String(error)}.`);
+      throw new Error("Silent reauth failed. Microsoft rejected the saved session, so use Add Microsoft Java when you want to sign in again.");
     }
   }
-
-  return microsoftLogin(cleanClientId || clientId);
 }
 
 async function finishMicrosoftLogin(clientId, token, previousRefreshToken = "") {
