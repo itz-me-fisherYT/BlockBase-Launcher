@@ -317,8 +317,13 @@
     }
   }
 
+  function accountCanSilentReauth(account) {
+    return account.kind === "java" && account.status === "online" && account.canRefresh === true;
+  }
+
   function accountNeedsReauth(account) {
-    if (!account.lastAuthedAt) return account.status === "online";
+    if (!accountCanSilentReauth(account)) return false;
+    if (!account.lastAuthedAt) return false;
     return Date.now() - new Date(account.lastAuthedAt).getTime() > 24 * 60 * 60 * 1000;
   }
 
@@ -368,9 +373,11 @@
   }
 
   function reauthText(account) {
-    if (!account.lastAuthedAt) return account.status === "online" ? "Reauth recommended" : "Offline/dev";
+    if (account.status !== "online") return "Offline/dev";
+    if (!accountCanSilentReauth(account)) return "Silent reauth unavailable";
+    if (!account.lastAuthedAt) return "Reauth ready";
     const hours = Math.max(0, 24 - Math.floor((Date.now() - new Date(account.lastAuthedAt).getTime()) / 36e5));
-    return accountNeedsReauth(account) ? "Reauth required" : `Reauth in ${hours}h`;
+    return accountNeedsReauth(account) ? "Reauth ready" : `Reauth in ${hours}h`;
   }
 
   function deleteAccount(accountId) {
@@ -770,11 +777,14 @@
       if (account.kind === "java") {
         const detail = document.createElement("div");
         detail.className = "account-extra";
+        const silentReauth = accountCanSilentReauth(account);
         detail.innerHTML = `
-          <span class="${accountNeedsReauth(account) ? "reauth-due" : "reauth-ok"}">${reauthText(account)}</span>
+          <span class="${silentReauth ? "reauth-ok" : "reauth-due"}">${reauthText(account)}</span>
           <button data-view-skin="${account.id}" type="button">3D skin</button>
           <button data-change-skin="true" type="button">Change skin</button>
-          <button data-reauth-account="${account.id}" type="button">Reauth</button>
+          ${silentReauth
+            ? `<button data-reauth-account="${account.id}" type="button">Reauth</button>`
+            : `<button data-add-microsoft-java="true" type="button">Upgrade login</button>`}
         `;
         card.appendChild(detail);
       }
