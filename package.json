@@ -2,8 +2,8 @@
   "name": "mc-custom-launcher",
   "private": true,
   "version": "0.1.0",
-  "description": "BlockForge, a custom Minecraft launcher for Java and future Bedrock support.",
-  "author": "BlockForge",
+  "description": "BlockBaseMC, a custom Minecraft Java launcher with profiles, accounts, imports, and modpack support.",
+  "author": "BlockBaseMC",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -14,8 +14,8 @@
     "electron:pack:linux": "electron-builder --linux AppImage deb --config.directories.output=release-linux"
   },
   "build": {
-    "appId": "app.blockforge.launcher",
-    "productName": "Blockforge Launcher",
+    "appId": "app.blockbasemc.launcher",
+    "productName": "BlockBaseMC Launcher",
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -62,7 +62,7 @@
       ]
     },
     "portable": {
-      "artifactName": "Blockforge-Launcher-${version}.exe"
+      "artifactName": "BlockBaseMC-Launcher-${version}.exe"
     }
   },
   "dependencies": {

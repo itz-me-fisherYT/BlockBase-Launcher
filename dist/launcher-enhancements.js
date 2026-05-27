@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   const storageKey = "blockforge-launcher/state/v2";
   const msClientIdKey = "blockforge-launcher/microsoft-client-id";
   const restorePageKey = "blockforge-launcher/restore-page";
@@ -38,7 +38,7 @@
       icon: edition === "java" ? "grass" : "diamond",
       banner: "Fresh isolated instance",
       accountId: "",
-      folder: `.blockforge/${edition}/${id.slice(0, 8)}`,
+      folder: `.blockbasemc/${edition}/${id.slice(0, 8)}`,
       javaPath: "",
       ramMin: edition === "java" ? 1024 : 0,
       ramMax: edition === "java" ? 4096 : 0,
@@ -246,7 +246,7 @@
     }
 
     const clientId = localStorage.getItem(msClientIdKey) || "00000000402B5328";
-    window.alert("Your browser will open for Microsoft sign-in. If Microsoft asks for a code, use the code shown in BlockForge.");
+    window.alert("Your browser will open for Microsoft sign-in. If Microsoft asks for a code, use the code shown in BlockBaseMC.");
 
     try {
       const account = await window.launcherApi.microsoftLogin(clientId);
@@ -290,7 +290,7 @@
     const clientId = localStorage.getItem(msClientIdKey) || "00000000402B5328";
 
     try {
-      window.alert("Your browser will open for Microsoft reauth. If Microsoft asks for a code, use the code shown in BlockForge.");
+      window.alert("Your browser will open for Microsoft reauth. If Microsoft asks for a code, use the code shown in BlockBaseMC.");
       const account = await window.launcherApi.microsoftLogin(clientId);
       const updatedJava = {
         ...existing,
@@ -340,7 +340,7 @@
         <button class="skin-modal-close" type="button" data-close-ms-device aria-label="Close">x</button>
         <span class="eyebrow">Microsoft browser login</span>
         <h3>Finish sign-in in your browser</h3>
-        <p>BlockForge opened your browser. Enter this code if Microsoft asks for it, then come back here while the launcher connects your account.</p>
+        <p>BlockBaseMC opened your browser. Enter this code if Microsoft asks for it, then come back here while the launcher connects your account.</p>
         <div class="ms-device-code">${escapeHtml(code || "Waiting")}</div>
         <div class="ms-device-actions">
           <button class="secondary-button" type="button" data-copy-ms-code="${escapeHtml(code)}">Copy code</button>
@@ -615,7 +615,7 @@
         <div>
           <span class="status-badge ${server.status || "offline"}">${server.status || "unknown"}</span>
           <strong>${server.players || "?"} players</strong>
-          <small>${server.version || "Unknown version"}${server.software ? ` Â· ${server.software}` : ""}</small>
+          <small>${server.version || "Unknown version"}${server.software ? ` · ${server.software}` : ""}</small>
         </div>
       </div>
       <p>${server.motd || "No MOTD returned"}</p>
@@ -1122,7 +1122,7 @@
     return `
       <article class="project-card api-project-card">
         ${icon}
-        <span>${project.type || "project"} · ${project.author || "Unknown author"}</span>
+        <span>${project.type || "project"} � ${project.author || "Unknown author"}</span>
         <h3>${escapeHtml(project.title || "Untitled")}</h3>
         <p>${escapeHtml(project.description || "No description")}</p>
         <div class="tag-row">
@@ -1586,22 +1586,22 @@
       },
       zip: {
         title: "Import from ZIP",
-        description: "Import a generic ZIP, Modrinth .mrpack, or CurseForge ZIP. BlockForge will detect known manifests automatically.",
+        description: "Import a generic ZIP, Modrinth .mrpack, or CurseForge ZIP. BlockBaseMC will detect known manifests automatically.",
         importMode: "zip"
       },
       minecraft: {
         title: "Import .minecraft",
-        description: "Pick an existing .minecraft folder and BlockForge will copy mods, saves, configs, packs, screenshots, options, and servers.",
+        description: "Pick an existing .minecraft folder and BlockBaseMC will copy mods, saves, configs, packs, screenshots, options, and servers.",
         importMode: "minecraft"
       },
       prism: {
         title: "Import Prism / MultiMC",
-        description: "Pick a Prism or MultiMC instance folder. BlockForge reads mmc-pack metadata and imports the instance's minecraft folder.",
+        description: "Pick a Prism or MultiMC instance folder. BlockBaseMC reads mmc-pack metadata and imports the instance's minecraft folder.",
         importMode: "prism"
       },
       modrinth: {
         title: "Import Modrinth pack",
-        description: "Pick a .mrpack file. BlockForge extracts overrides, downloads pack files, and creates the matching loader profile.",
+        description: "Pick a .mrpack file. BlockBaseMC extracts overrides, downloads pack files, and creates the matching loader profile.",
         importMode: "modrinth"
       },
       curseforge: {
@@ -1648,7 +1648,7 @@
       accountId: account,
       group: document.querySelector("[data-prism-group]")?.value?.trim() || "",
       banner: `${loader} ${version}`,
-      folder: `.blockforge/java/${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 28) || base.id.slice(0, 8)}`
+      folder: `.blockbasemc/java/${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 28) || base.id.slice(0, 8)}`
     };
   }
 
@@ -1714,7 +1714,7 @@
       <div class="panel-head">
         <div>
           <h3>Client colors</h3>
-          <p class="enhancement-hint">Change BlockForge's accent, panels, and text colors.</p>
+          <p class="enhancement-hint">Change BlockBaseMC's accent, panels, and text colors.</p>
         </div>
         <button class="secondary-button" data-reset-theme="true" type="button">Reset</button>
       </div>
@@ -1867,7 +1867,7 @@
       enhanceThemeSettings();
       applyCustomTheme();
     } catch (error) {
-      console.warn("Blockforge enhancement skipped:", error);
+      console.warn("BlockBaseMC enhancement skipped:", error);
     }
   }
 

@@ -1,6 +1,6 @@
-# BlockForge GitHub Pages Site
+# BlockBaseMC GitHub Pages Site
 
-This folder is the static website for BlockForge.
+This folder is the static website for BlockBaseMC.
 
 To publish it on GitHub Pages:
 

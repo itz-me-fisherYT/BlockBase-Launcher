@@ -1,6 +1,6 @@
-# BlockForge Launcher
+# BlockBaseMC Launcher
 
-BlockForge is a custom Minecraft Java launcher focused on a clean profile workflow, Microsoft login, modpack imports, and Modrinth/CurseForge content management.
+BlockBaseMC is a custom Minecraft Java launcher focused on a clean profile workflow, Microsoft login, modpack imports, and Modrinth/CurseForge content management.
 
 ## Current Features
 
@@ -41,4 +41,4 @@ Do not commit `release-fast*` folders. Upload the generated `.exe` to GitHub Rel
 
 ## Disclaimer
 
-BlockForge is not affiliated with Mojang, Microsoft, Prism Launcher, CurseForge, or Modrinth.
+BlockBaseMC is not affiliated with Mojang, Microsoft, Prism Launcher, CurseForge, or Modrinth.

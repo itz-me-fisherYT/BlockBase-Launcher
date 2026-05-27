@@ -23,7 +23,7 @@ function createWindow() {
     minHeight: 640,
     resizable: true,
     center: true,
-    title: "Blockforge Launcher",
+    title: "BlockBaseMC Launcher",
     backgroundColor: "#0f1412",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
@@ -96,7 +96,7 @@ async function launchMinecraftUnsafe(profile) {
   if (profile.edition === "bedrock") {
     return {
       ok: false,
-      message: "Bedrock support has been removed from this BlockForge build.",
+      message: "Bedrock support has been removed from this BlockBaseMC build.",
       commandPreview: []
     };
   }
@@ -537,7 +537,7 @@ function buildJavaCommand({ java, profile, roots, versionJson, classpath, native
     resolution_width: String(profile.width || 1280),
     resolution_height: String(profile.height || 720),
     natives_directory: nativesDir,
-    launcher_name: "Blockforge",
+    launcher_name: "BlockBaseMC",
     launcher_version: app.getVersion(),
     classpath: classpath.join(separator)
   };
@@ -937,7 +937,7 @@ async function installModrinthProject(options = {}) {
 async function installModrinthPackVersion(version, project) {
   const file = (version.files || []).find((item) => item.primary) || version.files?.[0];
   if (!file?.url) throw new Error(`No downloadable modpack file found for ${version.name || project.title || project.id}.`);
-  const temp = path.join(app.getPath("temp"), `blockforge-${Date.now()}-${safeName(file.filename || "modrinth-pack.mrpack")}`);
+  const temp = path.join(app.getPath("temp"), `blockbasemc-${Date.now()}-${safeName(file.filename || "modrinth-pack.mrpack")}`);
   await downloadFile(file.url, temp, file.hashes?.sha1, file.filename || "Modrinth modpack", false);
   try {
     const name = safeName(project.title || version.name || path.basename(file.filename || "Modrinth Pack", path.extname(file.filename || "")));
@@ -1035,7 +1035,7 @@ async function installCurseForgeFile(apiKey, profile, project, file, type, insta
 async function installCurseForgePackFile(apiKey, project, file) {
   const downloadUrl = file.downloadUrl || await curseForgeFileDownloadUrl(apiKey, project.id, file.id);
   if (!downloadUrl) throw new Error(`CurseForge did not provide a direct download URL for ${file.fileName || project.title || project.id}.`);
-  const temp = path.join(app.getPath("temp"), `blockforge-${Date.now()}-${safeName(file.fileName || "curseforge-pack.zip")}`);
+  const temp = path.join(app.getPath("temp"), `blockbasemc-${Date.now()}-${safeName(file.fileName || "curseforge-pack.zip")}`);
   await downloadFile(downloadUrl, temp, null, file.fileName || "CurseForge modpack", false);
   try {
     const name = safeName(project.title || file.displayName || path.basename(file.fileName || "CurseForge Pack", path.extname(file.fileName || "")));
@@ -1188,7 +1188,7 @@ async function searchModrinth(options = {}) {
 
   const response = await fetch(`https://api.modrinth.com/v2/search?${params}`, {
     headers: {
-      "user-agent": `BlockforgeLauncher/${app.getVersion()} (Minecraft launcher)`
+      "user-agent": `BlockBaseMCLauncher/${app.getVersion()} (Minecraft launcher)`
     }
   });
   const json = await response.json().catch(() => ({}));
