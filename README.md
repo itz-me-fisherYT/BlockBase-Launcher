@@ -13,7 +13,6 @@ BlockBaseMC is a custom Minecraft Java launcher focused on a clean profile workf
 - Modpack import/install support
 - Installed mod/resource pack/shader management
 - Running instance tracking and kill controls
-- GitHub Pages website in `docs/`
 
 ## Development
 
@@ -28,12 +27,6 @@ Build a Windows portable executable:
 ```powershell
 npx electron-builder --win portable --config.directories.output=release-fast-local
 ```
-
-## Website
-
-The GitHub Pages site lives in `docs/`.
-
-In GitHub, go to `Settings > Pages`, choose `Deploy from a branch`, then select the `docs` folder on your main branch.
 
 ## Releases
 
