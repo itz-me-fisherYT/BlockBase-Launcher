@@ -1,0 +1,79 @@
+{
+  "name": "mc-custom-launcher",
+  "private": true,
+  "version": "0.1.0",
+  "description": "BlockForge, a custom Minecraft launcher for Java and future Bedrock support.",
+  "author": "BlockForge",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "electron:pack": "electron-builder --win portable --config.directories.output=release-clean",
+    "electron:pack:win": "electron-builder --win portable --config.directories.output=release-win",
+    "mac:icon": "iconutil -c icns curseforge-assets/blockforge.iconset -o curseforge-assets/blockforge-icon.icns",
+    "electron:pack:mac": "npm run mac:icon && electron-builder --mac dmg zip --config.directories.output=release-mac",
+    "electron:pack:linux": "electron-builder --linux AppImage deb --config.directories.output=release-linux"
+  },
+  "build": {
+    "appId": "app.blockforge.launcher",
+    "productName": "Blockforge Launcher",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "curseforge-assets/blockforge-icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "mac": {
+      "icon": "curseforge-assets/blockforge-icon.icns",
+      "category": "public.app-category.games",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "curseforge-assets/blockforge-icon-128.png",
+      "category": "Game",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    },
+    "portable": {
+      "artifactName": "Blockforge-Launcher-${version}.exe"
+    }
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.0",
+    "adm-zip": "^0.5.17",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "electron": "^42.2.0",
+    "electron-builder": "^26.8.1"
+  }
+}
