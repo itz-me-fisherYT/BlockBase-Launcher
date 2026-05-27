@@ -1915,9 +1915,9 @@ async function refreshMicrosoftToken(clientId, refreshToken) {
     refresh_token: refreshToken,
     grant_type: "refresh_token"
   };
-  if (!useLiveAuth) {
-    fields.scope = "XboxLive.signin offline_access";
-  }
+  fields.scope = useLiveAuth
+    ? "service::user.auth.xboxlive.com::MBI_SSL"
+    : "XboxLive.signin offline_access";
   return postForm(tokenUrl, fields);
 }
 
