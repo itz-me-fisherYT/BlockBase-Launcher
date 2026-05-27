@@ -290,8 +290,9 @@
     const clientId = localStorage.getItem(msClientIdKey) || "00000000402B5328";
 
     try {
-      window.alert("Your browser will open for Microsoft reauth. If Microsoft asks for a code, use the code shown in BlockBaseMC.");
-      const account = await window.launcherApi.microsoftLogin(clientId);
+      const account = window.launcherApi.microsoftReauth
+        ? await window.launcherApi.microsoftReauth(accountId, clientId)
+        : await window.launcherApi.microsoftLogin(clientId);
       const updatedJava = {
         ...existing,
         ...account,
@@ -307,7 +308,9 @@
       );
       writeState(state);
       closeMicrosoftDeviceModal();
-      window.alert(`Reauthed ${account.displayName}.`);
+      window.alert(account.refreshed
+        ? `Reauthed ${account.displayName} without browser login.`
+        : `Reauthed ${account.displayName}.`);
       reloadKeepingPage();
     } catch (error) {
       window.alert(`Reauth failed: ${error?.message || String(error)}`);

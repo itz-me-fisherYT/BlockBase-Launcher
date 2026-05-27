@@ -54,6 +54,7 @@ ipcMain.handle("launch-profile", (_event, profile) => launchMinecraft(profile));
   ipcMain.handle("kill-instance", (_event, profileName) => killInstance(profileName));
   ipcMain.handle("open-path", (_event, target) => openPath(target));
   ipcMain.handle("microsoft-login", (_event, clientId) => microsoftLogin(clientId));
+  ipcMain.handle("microsoft-reauth", (_event, accountId, clientId) => microsoftReauth(accountId, clientId));
   ipcMain.handle("search-mods", (_event, options) => searchMods(options));
   ipcMain.handle("install-project", (_event, options) => installProject(options));
   ipcMain.handle("list-profile-content", (_event, profile) => listProfileContent(profile));
@@ -627,21 +628,37 @@ async function resolveLaunchAuth(profile) {
     if (cached) {
       if (Date.now() < Number(cached.expiresAt || 0) - 60_000) {
         emitLog("info", `Using Microsoft auth for ${cached.username}.`);
-        return {
-          mode: "microsoft",
-          username: cached.username,
-          uuid: cached.uuid,
-          accessToken: cached.accessToken,
-          clientId: cached.clientId || "0",
-          xuid: cached.xuid || "0",
-          userType: "msa"
-        };
+        return makeMicrosoftLaunchAuth(cached);
+      }
+      if (cached.refreshToken && cached.clientId) {
+        try {
+          emitLog("info", `Refreshing Microsoft auth for ${cached.username}.`);
+          const refreshed = await refreshMicrosoftToken(cached.clientId, cached.refreshToken);
+          const account = await finishMicrosoftLogin(cached.clientId, refreshed, cached.refreshToken);
+          const refreshedCache = await readMicrosoftAuthCache();
+          const refreshedEntry = findMicrosoftAuth(refreshedCache, account.id) || findMicrosoftAuth(refreshedCache, account.displayName);
+          if (refreshedEntry) return makeMicrosoftLaunchAuth(refreshedEntry);
+        } catch (error) {
+          emitLog("warn", `Microsoft auth refresh failed for ${cached.username}: ${error?.message || String(error)}.`);
+        }
       }
       emitLog("error", `Microsoft auth for ${cached.username} expired. Reauth the account, then launch again.`);
     }
   }
 
   return makeOfflineAuth(profile);
+}
+
+function makeMicrosoftLaunchAuth(cached) {
+  return {
+    mode: "microsoft",
+    username: cached.username,
+    uuid: cached.uuid,
+    accessToken: cached.accessToken,
+    clientId: cached.clientId || "0",
+    xuid: cached.xuid || "0",
+    userType: "msa"
+  };
 }
 
 function findMicrosoftAuth(cache, accountName) {
@@ -1716,12 +1733,42 @@ async function microsoftLogin(clientId) {
   }
 
   const token = await pollMicrosoftToken(cleanClientId, device, useMinecraftLiveAuth);
+  return finishMicrosoftLogin(cleanClientId, token);
+}
+
+async function microsoftReauth(accountId, clientId) {
+  const cache = await readMicrosoftAuthCache();
+  const cached = findMicrosoftAuth(cache, String(accountId || ""));
+  const cleanClientId = String(cached?.clientId || clientId || "").trim();
+
+  if (cached?.refreshToken && cleanClientId) {
+    try {
+      const refreshed = await refreshMicrosoftToken(cleanClientId, cached.refreshToken);
+      const account = await finishMicrosoftLogin(cleanClientId, refreshed, cached.refreshToken);
+      emitLog("info", `Refreshed Microsoft auth for ${account.displayName} without opening the browser.`);
+      return { ...account, refreshed: true };
+    } catch (error) {
+      emitLog("warn", `Saved Microsoft session could not be refreshed: ${error?.message || String(error)}. Opening browser login.`);
+    }
+  }
+
+  return microsoftLogin(cleanClientId || clientId);
+}
+
+async function finishMicrosoftLogin(clientId, token, previousRefreshToken = "") {
   const xbl = await xboxLiveAuth(token.access_token);
   const xsts = await xstsAuth(xbl.token);
   const minecraft = await minecraftAuth(xsts.uhs, xsts.token);
   await assertMinecraftEntitlement(minecraft.access_token);
   const profile = await minecraftProfile(minecraft.access_token);
-  await saveMicrosoftAuthSession({ clientId: cleanClientId, minecraft, profile, xuid: xsts.uhs });
+  await saveMicrosoftAuthSession({
+    clientId,
+    microsoftToken: token,
+    minecraft,
+    profile,
+    xuid: xsts.uhs,
+    previousRefreshToken
+  });
 
   return {
     id: `java-ms-${profile.id}`,
@@ -1730,7 +1777,8 @@ async function microsoftLogin(clientId) {
     identifier: profile.id,
     avatar: profile.name.slice(0, 2).toUpperCase(),
     default: false,
-    status: "online"
+    status: "online",
+    canRefresh: Boolean(token.refresh_token || previousRefreshToken)
   };
 }
 
@@ -1813,19 +1861,22 @@ async function writeMicrosoftAuthCache(cache) {
   await fs.rename(temp, target);
 }
 
-async function saveMicrosoftAuthSession({ clientId, minecraft, profile, xuid }) {
+async function saveMicrosoftAuthSession({ clientId, microsoftToken, minecraft, profile, xuid, previousRefreshToken = "" }) {
   const id = `java-ms-${profile.id}`;
   const cache = await readMicrosoftAuthCache();
   const expiresIn = Number(minecraft.expires_in || 86400);
+  const existing = cache.accounts?.[id] || {};
   cache.accounts = {
     ...(cache.accounts || {}),
     [id]: {
+      ...existing,
       id,
       clientId,
       username: profile.name,
       uuid: profile.id,
       xuid: xuid || "0",
       accessToken: minecraft.access_token,
+      refreshToken: microsoftToken?.refresh_token || previousRefreshToken || existing.refreshToken || "",
       expiresAt: Date.now() + expiresIn * 1000,
       savedAt: new Date().toISOString()
     }
@@ -1841,6 +1892,22 @@ async function exchangeLiveCode(clientId, redirectUri, code) {
     redirect_uri: redirectUri,
     scope: "service::user.auth.xboxlive.com::MBI_SSL"
   });
+}
+
+async function refreshMicrosoftToken(clientId, refreshToken) {
+  const useLiveAuth = String(clientId || "").toLowerCase() === "00000000402b5328";
+  const tokenUrl = useLiveAuth
+    ? "https://login.live.com/oauth20_token.srf"
+    : "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
+  const fields = {
+    client_id: clientId,
+    refresh_token: refreshToken,
+    grant_type: "refresh_token"
+  };
+  if (!useLiveAuth) {
+    fields.scope = "XboxLive.signin offline_access";
+  }
+  return postForm(tokenUrl, fields);
 }
 
 async function pollMicrosoftToken(clientId, device, useLiveAuth = false) {
