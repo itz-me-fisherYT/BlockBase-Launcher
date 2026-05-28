@@ -1705,10 +1705,16 @@
 
   function prismProfilePayload() {
     const base = makeDefaultProfile("java");
+    const state = readState();
     const account = document.querySelector("[data-prism-account]")?.value || "";
     const loader = document.querySelector("[data-prism-loader]")?.value || "Vanilla";
     const version = selectedPrismVersion();
     const name = document.querySelector("[data-prism-name]")?.value?.trim() || `${loader} ${version}`;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 28) || base.id.slice(0, 8);
+    let folder = `.blockbasemc/java/${slug}`;
+    if (state.profiles.some((profile) => profile.folder === folder)) {
+      folder = `${folder}-${base.id.slice(0, 6)}`;
+    }
     return {
       ...base,
       name,
@@ -1717,7 +1723,7 @@
       accountId: account,
       group: document.querySelector("[data-prism-group]")?.value?.trim() || "",
       banner: `${loader} ${version}`,
-      folder: `.blockbasemc/java/${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 28) || base.id.slice(0, 8)}`
+      folder
     };
   }
 
@@ -1726,6 +1732,7 @@
     const state = readState();
     state.profiles = [profile, ...state.profiles];
     writeState(state);
+    window.alert(`Created instance: ${profile.name}`);
     reloadKeepingPage();
   }
 

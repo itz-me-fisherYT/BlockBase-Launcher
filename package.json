@@ -1,7 +1,7 @@
 {
   "name": "mc-custom-launcher",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "BlockBaseMC, a custom Minecraft Java launcher with profiles, accounts, imports, and modpack support.",
   "author": "BlockBaseMC",
   "type": "module",
