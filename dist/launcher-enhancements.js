@@ -1062,7 +1062,7 @@
         <p>${escapeHtml(updateMessage)}</p>
         <div class="enhancement-actions">
           <button data-check-updates="true" type="button">Check updates</button>
-          <button data-open-update="https://github.com/itz-me-fisherYT/BlockBase-Launcher/releases/latest" type="button">Latest release</button>
+          <button data-open-update="https://github.com/itz-me-fisherYT/BlockBase-Launcher/releases" type="button">Releases</button>
         </div>
       `;
       stack?.before(notice);

@@ -923,14 +923,14 @@ async function openExternal(target) {
 
 async function checkForUpdates() {
   const currentVersion = app.getVersion();
-  const releaseUrl = `https://api.github.com/repos/${updateRepo}/releases/latest`;
+  const releaseUrl = `https://api.github.com/repos/${updateRepo}/releases?per_page=10`;
   const response = await fetch(releaseUrl, {
     headers: {
       accept: "application/vnd.github+json",
       "user-agent": `BlockBaseMCLauncher/${currentVersion}`
     }
   });
-  const json = await response.json().catch(() => ({}));
+  const json = await response.json().catch(() => []);
 
   if (response.status === 404) {
     return {
@@ -943,12 +943,23 @@ async function checkForUpdates() {
   if (!response.ok) {
     throw new Error(json.message || `Could not check for updates: ${response.status}`);
   }
+  const releases = Array.isArray(json) ? json.filter((release) => !release.draft) : [];
+  const release = releases[0];
 
-  const latestVersion = cleanReleaseVersion(json.tag_name || json.name || "");
-  const asset = Array.isArray(json.assets)
-    ? json.assets.find((item) => /\.exe$/i.test(item.name || "")) || json.assets[0]
+  if (!release) {
+    return {
+      ok: true,
+      currentVersion,
+      updateAvailable: false,
+      message: "No GitHub Release has been published yet."
+    };
+  }
+
+  const latestVersion = cleanReleaseVersion(release.tag_name || release.name || "");
+  const asset = Array.isArray(release.assets)
+    ? release.assets.find((item) => /\.exe$/i.test(item.name || "")) || release.assets[0]
     : null;
-  const downloadUrl = asset?.browser_download_url || json.html_url || `https://github.com/${updateRepo}/releases/latest`;
+  const downloadUrl = asset?.browser_download_url || release.html_url || `https://github.com/${updateRepo}/releases`;
   const updateAvailable = compareVersions(latestVersion, currentVersion) > 0;
 
   return {
@@ -956,10 +967,11 @@ async function checkForUpdates() {
     currentVersion,
     latestVersion,
     updateAvailable,
-    releaseName: json.name || json.tag_name || "Latest release",
-    releaseUrl: json.html_url || `https://github.com/${updateRepo}/releases/latest`,
+    releaseName: release.name || release.tag_name || "Latest release",
+    releaseUrl: release.html_url || `https://github.com/${updateRepo}/releases`,
     downloadUrl,
-    publishedAt: json.published_at || "",
+    publishedAt: release.published_at || "",
+    prerelease: Boolean(release.prerelease),
     message: updateAvailable
       ? `BlockBaseMC ${latestVersion} is available.`
       : `BlockBaseMC is up to date (${currentVersion}).`
