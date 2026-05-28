@@ -3,7 +3,10 @@
   const msClientIdKey = "blockforge-launcher/microsoft-client-id";
   const restorePageKey = "blockforge-launcher/restore-page";
   const themeKey = "blockforge/custom-theme";
+  const updateDismissKey = "blockbasemc/update-dismissed-version";
   let minecraftVersionCache = null;
+  let launcherUpdateState = null;
+  let launcherUpdateCheckStarted = false;
   let deviceCodeListenerReady = false;
 
   function readState() {
@@ -380,6 +383,54 @@
     return accountNeedsReauth(account) ? "Reauth ready" : `Reauth in ${hours}h`;
   }
 
+  async function checkLauncherUpdates(manual = false) {
+    if (!window.launcherApi?.checkForUpdates) {
+      if (manual) window.alert("This build does not include update checks yet.");
+      return;
+    }
+    if (launcherUpdateCheckStarted && !manual) return;
+    launcherUpdateCheckStarted = true;
+    try {
+      const result = await window.launcherApi.checkForUpdates();
+      launcherUpdateState = result;
+      renderLauncherUpdateBanner();
+      if (manual) {
+        window.alert(result?.message || "Update check finished.");
+      }
+    } catch (error) {
+      launcherUpdateState = { ok: false, message: error?.message || String(error) };
+      renderLauncherUpdateBanner();
+      if (manual) window.alert(`Update check failed: ${launcherUpdateState.message}`);
+    }
+  }
+
+  function renderLauncherUpdateBanner() {
+    document.querySelector("[data-launcher-update-banner]")?.remove();
+    const update = launcherUpdateState;
+    if (!update?.updateAvailable) return;
+    if (localStorage.getItem(updateDismissKey) === update.latestVersion) return;
+
+    const topbar = document.querySelector(".topbar");
+    const main = document.querySelector(".main");
+    if (!topbar || !main) return;
+
+    const banner = document.createElement("section");
+    banner.className = "launcher-update-banner";
+    banner.dataset.launcherUpdateBanner = "true";
+    banner.innerHTML = `
+      <div>
+        <span class="eyebrow">Update available</span>
+        <h3>BlockBaseMC ${escapeHtml(update.latestVersion)} is ready</h3>
+        <p>You are running ${escapeHtml(update.currentVersion)}. Portable builds update by downloading the newest exe from GitHub Releases.</p>
+      </div>
+      <div class="enhancement-actions">
+        <button data-open-update="${escapeHtml(update.releaseUrl || update.downloadUrl)}" type="button">View release</button>
+        <button data-download-update="${escapeHtml(update.downloadUrl || update.releaseUrl)}" type="button">Download update</button>
+        <button data-dismiss-update="${escapeHtml(update.latestVersion)}" type="button">Dismiss</button>
+      </div>
+    `;
+    topbar.after(banner);
+  }
   function deleteAccount(accountId) {
     const state = readState();
     const account = state.accounts.find((item) => item.id === accountId);
@@ -1005,9 +1056,14 @@
       const notice = document.createElement("section");
       notice.className = "panel feature-notice";
       notice.dataset.updateNotice = "true";
+      const updateMessage = launcherUpdateState?.message || "Checks GitHub Releases for newer BlockBaseMC builds.";
       notice.innerHTML = `
-        <h3>Launcher auto-update pending</h3>
-        <p>Downloads run in the background, but app self-update is not wired until signed releases exist.</p>
+        <h3>Launcher updates</h3>
+        <p>${escapeHtml(updateMessage)}</p>
+        <div class="enhancement-actions">
+          <button data-check-updates="true" type="button">Check updates</button>
+          <button data-open-update="https://github.com/itz-me-fisherYT/BlockBase-Launcher/releases/latest" type="button">Latest release</button>
+        </div>
       `;
       stack?.before(notice);
     }
@@ -1872,6 +1928,7 @@
       enhanceDiscover();
       enhanceDownloads();
       enhanceStatusBar();
+      renderLauncherUpdateBanner();
       enhanceFeatureNotices();
       removeBedrockUi();
       enhanceInstances();
@@ -1916,6 +1973,13 @@
       return searchMods();
     }
     if (button.dataset.openProject) return window.open(button.dataset.openProject, "_blank");
+    if (button.dataset.checkUpdates) return checkLauncherUpdates(true);
+    if (button.dataset.openUpdate) return window.launcherApi?.openExternal?.(button.dataset.openUpdate) || window.open(button.dataset.openUpdate, "_blank");
+    if (button.dataset.downloadUpdate) return window.launcherApi?.openExternal?.(button.dataset.downloadUpdate) || window.open(button.dataset.downloadUpdate, "_blank");
+    if (button.dataset.dismissUpdate) {
+      localStorage.setItem(updateDismissKey, button.dataset.dismissUpdate);
+      return renderLauncherUpdateBanner();
+    }
     if (button.dataset.prismSource) return selectPrismSource(button.dataset.prismSource);
     if (button.dataset.versionPickerToggle) return toggleVersionPicker();
     if (button.dataset.pickVersion) return pickVersion(button.dataset.pickVersion);
@@ -2015,6 +2079,7 @@
     repairProfileState();
     sanitizeInstances();
     setupMicrosoftDeviceCodeListener();
+    checkLauncherUpdates(false);
     enhance();
     window.setTimeout(restorePageAfterReload, 60);
     let attempts = 0;

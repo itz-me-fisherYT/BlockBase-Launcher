@@ -7,6 +7,7 @@ const { spawn } = require("node:child_process");
 const AdmZip = require("adm-zip");
 
 const manifestUrl = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
+const updateRepo = "itz-me-fisherYT/BlockBase-Launcher";
 let mainWindow;
 const activeChildren = new Map();
 let launchCounter = 0;
@@ -53,6 +54,8 @@ ipcMain.handle("launch-profile", (_event, profile) => launchMinecraft(profile));
   ipcMain.handle("running-instances", () => runningInstances());
   ipcMain.handle("kill-instance", (_event, profileName) => killInstance(profileName));
   ipcMain.handle("open-path", (_event, target) => openPath(target));
+  ipcMain.handle("open-external", (_event, target) => openExternal(target));
+  ipcMain.handle("check-for-updates", () => checkForUpdates());
   ipcMain.handle("microsoft-login", (_event, clientId) => microsoftLogin(clientId));
   ipcMain.handle("microsoft-reauth", (_event, accountId, clientId) => microsoftReauth(accountId, clientId));
   ipcMain.handle("search-mods", (_event, options) => searchMods(options));
@@ -909,6 +912,74 @@ async function openPath(target) {
   if (!clean) return { ok: false, message: "No path provided." };
   const result = await shell.openPath(clean);
   return result ? { ok: false, message: result } : { ok: true, message: `Opened ${clean}.` };
+}
+
+async function openExternal(target) {
+  const clean = String(target || "").trim();
+  if (!/^https?:\/\//i.test(clean)) return { ok: false, message: "Only web links can be opened." };
+  await shell.openExternal(clean);
+  return { ok: true, message: `Opened ${clean}.` };
+}
+
+async function checkForUpdates() {
+  const currentVersion = app.getVersion();
+  const releaseUrl = `https://api.github.com/repos/${updateRepo}/releases/latest`;
+  const response = await fetch(releaseUrl, {
+    headers: {
+      accept: "application/vnd.github+json",
+      "user-agent": `BlockBaseMCLauncher/${currentVersion}`
+    }
+  });
+  const json = await response.json().catch(() => ({}));
+
+  if (response.status === 404) {
+    return {
+      ok: true,
+      currentVersion,
+      updateAvailable: false,
+      message: "No GitHub Release has been published yet."
+    };
+  }
+  if (!response.ok) {
+    throw new Error(json.message || `Could not check for updates: ${response.status}`);
+  }
+
+  const latestVersion = cleanReleaseVersion(json.tag_name || json.name || "");
+  const asset = Array.isArray(json.assets)
+    ? json.assets.find((item) => /\.exe$/i.test(item.name || "")) || json.assets[0]
+    : null;
+  const downloadUrl = asset?.browser_download_url || json.html_url || `https://github.com/${updateRepo}/releases/latest`;
+  const updateAvailable = compareVersions(latestVersion, currentVersion) > 0;
+
+  return {
+    ok: true,
+    currentVersion,
+    latestVersion,
+    updateAvailable,
+    releaseName: json.name || json.tag_name || "Latest release",
+    releaseUrl: json.html_url || `https://github.com/${updateRepo}/releases/latest`,
+    downloadUrl,
+    publishedAt: json.published_at || "",
+    message: updateAvailable
+      ? `BlockBaseMC ${latestVersion} is available.`
+      : `BlockBaseMC is up to date (${currentVersion}).`
+  };
+}
+
+function cleanReleaseVersion(value) {
+  const match = String(value || "").match(/\d+(?:\.\d+){0,2}/);
+  return match ? match[0] : "0.0.0";
+}
+
+function compareVersions(a, b) {
+  const left = cleanReleaseVersion(a).split(".").map((part) => Number(part) || 0);
+  const right = cleanReleaseVersion(b).split(".").map((part) => Number(part) || 0);
+  const length = Math.max(left.length, right.length, 3);
+  for (let index = 0; index < length; index += 1) {
+    const delta = (left[index] || 0) - (right[index] || 0);
+    if (delta !== 0) return delta;
+  }
+  return 0;
 }
 
 async function searchMods(options = {}) {

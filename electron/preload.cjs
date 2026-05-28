@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld("launcherApi", {
   runningInstances: () => ipcRenderer.invoke("running-instances"),
   killInstance: (instanceId) => ipcRenderer.invoke("kill-instance", instanceId),
   openPath: (target) => ipcRenderer.invoke("open-path", target),
+  openExternal: (target) => ipcRenderer.invoke("open-external", target),
+  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
   microsoftLogin: (clientId) => ipcRenderer.invoke("microsoft-login", clientId),
   microsoftReauth: (accountId, clientId) => ipcRenderer.invoke("microsoft-reauth", accountId, clientId),
   searchMods: (options) => ipcRenderer.invoke("search-mods", options),
