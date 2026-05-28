@@ -1983,9 +1983,9 @@
     if (button.dataset.prismSource) return selectPrismSource(button.dataset.prismSource);
     if (button.dataset.versionPickerToggle) return toggleVersionPicker();
     if (button.dataset.pickVersion) return pickVersion(button.dataset.pickVersion);
-    if (button.dataset.createPrismProfile) return createPrismProfile();
-    if (button.dataset.updateSelectedProfile) return updateSelectedPrismProfile();
-    if (button.dataset.refreshPrismVersions) {
+    if (button.dataset.createPrismProfile !== undefined) return createPrismProfile();
+    if (button.dataset.updateSelectedProfile !== undefined) return updateSelectedPrismProfile();
+    if (button.dataset.refreshPrismVersions !== undefined) {
       minecraftVersionCache = null;
       return renderPrismVersions(selectedPrismVersion());
     }
